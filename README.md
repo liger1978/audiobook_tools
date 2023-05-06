@@ -8,7 +8,7 @@
 
 ## m4b2mp3
 ```console
-$ /bin/m4b2mp3 -h
+$ bin/m4b2mp3 -h
 usage: m4b2mp3 [-h] [--log-level {debug,info,warning,error,critical}] m4b
 
 positional arguments:
