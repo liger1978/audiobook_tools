@@ -1,0 +1,5 @@
+#!/bin/bash
+real_script=$(realpath "$0")
+this_dir=$(dirname "$real_script")
+poetry_dir=$(dirname "$this_dir")
+poetry -C "$poetry_dir" run python "${poetry_dir}/audiobook_tools/m4b2mp3.py" "$@"
