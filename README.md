@@ -6,6 +6,11 @@
 - ffprobe
 - ffmpeg
 
+## Setup
+```bash
+poetry install
+```
+
 ## m4b2mp3
 ```console
 $ bin/m4b2mp3 -h
