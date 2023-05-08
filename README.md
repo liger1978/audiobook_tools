@@ -24,3 +24,14 @@ options:
   --log-level {debug,info,warning,error,critical}, -l {debug,info,warning,error,critical}
                         log level
 ```
+
+# fixmetadata
+```console
+$ fixmetadata -h
+usage: fixmetadata [-h] [--log-level {debug,info,warning,error,critical}]
+
+options:
+  -h, --help            show this help message and exit
+  --log-level {debug,info,warning,error,critical}, -l {debug,info,warning,error,critical}
+                        log level
+```

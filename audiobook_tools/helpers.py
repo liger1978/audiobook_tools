@@ -1,12 +1,16 @@
 import argparse
+import json
 import logging
 import os
 import readline
+import shlex
 import subprocess
 import sys
 
 from dateutil.parser import parse
 from jinja2 import Template
+from mutagen.id3 import APIC, ID3, TALB, TIT2, TPE1, TPE2, TPOS, TRCK, TYER
+from mutagen.mp3 import MP3
 
 debug = logging.DEBUG
 info = logging.INFO
@@ -85,3 +89,44 @@ def get_input(prompt, initial_text):
 
 def select_keys(dictionary, keys):
     return {key: dictionary[key] for key in keys}
+
+
+def get_m4b_tags(input_file):
+    log(f"Loading tags from file: {input_file}", info)
+    tags = select_keys(
+        json.loads(
+            run(
+                f"ffprobe -v quiet -print_format json -show_format -show_streams {shlex.quote(input_file)}"
+            )
+        )
+        .get("format", {})
+        .get("tags", {}),
+        ["artist", "title", "date"],
+    )
+    tags["author"] = tags.pop("artist", "")
+    tags["year"] = get_year(tags.pop("date", ""))
+    for tag in ["author", "title", "year"]:
+        tags[tag] = get_input(tag.capitalize(), f"{tags[tag]}")
+    return tags
+
+
+def set_mp3_tags(mp3, artist, album, title, year, track, cover, disc=None):
+    audio = MP3(mp3, ID3=ID3)
+    audio.delete()
+    try:
+        audio.add_tags()
+    except Exception:
+        pass
+    audio["TPE1"] = TPE1(encoding=3, text=artist)
+    audio["TPE2"] = TPE2(encoding=3, text=artist)
+    audio["TALB"] = TALB(encoding=3, text=album)
+    audio["TIT2"] = TIT2(encoding=3, text=title)
+    audio["TYER"] = TYER(encoding=3, text=year)
+    audio["TRCK"] = TRCK(encoding=3, text=track)
+    if disc:
+        audio["TPOS"] = TPOS(encoding=3, text=disc)
+    with open(cover, "rb") as image:
+        data = image.read()
+    audio["APIC"] = APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=data)
+    log(f"Saving tags to file: {mp3}", info)
+    audio.save(v2_version=3)
