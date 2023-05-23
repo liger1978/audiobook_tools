@@ -124,9 +124,10 @@ def get_m4b_tags(input_file, prompt=True):
     )
     tags["author"] = tags.pop("artist", "")
     tags["year"] = get_year(tags.pop("date", ""))
+    tags["short_title"] = tags["title"]
     if prompt:
-        for tag in ["author", "title", "year"]:
-            tags[tag] = get_input(tag.capitalize(), f"{tags[tag]}")
+        for tag in ["author", "title", "short_title", "year"]:
+            tags[tag] = get_input(tag.capitalize().replace("_", " "), f"{tags[tag]}")
     return tags
 
 

@@ -19,7 +19,9 @@ def main():
     log(f"There are {len(input_files)} m4b files to process: {input_files}", debug)
     # input_file = abspath(args.m4b)
     tags = get_m4b_tags(input_files[0])
-    output_dir = abspath(os.path.join(os.getcwd(), f"{tags['author']}/{tags['title']}"))
+    output_dir = abspath(
+        os.path.join(os.getcwd(), f"{tags['author']}/{tags['short_title']}")
+    )
     output_dir = abspath(get_input("Output directory", f"{output_dir}"))
     output_image = os.path.join(output_dir, "cover.jpg")
     output_image = abspath(get_input("Output cover image file", f"{output_image}"))
@@ -74,10 +76,10 @@ def main():
     )
     total_sections = get_input("Total sections", f"{total_sections}")
     if int(total_sections) > 1:
-        file_name_format = "{{ author }} - {{ title }} - {{ section }} - {{ track }} - {{ chapter }}.mp3"
+        file_name_format = "{{ author }} - {{ short_title }} - {{ section }} - {{ track }} - {{ chapter }}.mp3"
     else:
         file_name_format = (
-            "{{ author }} - {{ title }} - {{ track }} - {{ chapter }}.mp3"
+            "{{ author }} - {{ short_title }} - {{ track }} - {{ chapter }}.mp3"
         )
     file_name_format = get_input("File name format", f"{file_name_format}")
     print("Converting m4b files to mp3...")
