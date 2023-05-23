@@ -1,4 +1,5 @@
 import argparse
+import glob
 import json
 import logging
 import os
@@ -24,6 +25,9 @@ ch.setLevel(debug)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+conf_dir = os.path.join(os.path.expanduser("~"), ".config")
+history_file = os.path.join(conf_dir, ".audiobook_tools_history")
+os.makedirs(conf_dir, exist_ok=True)
 
 
 def common_parser(prog):
@@ -61,7 +65,12 @@ def run(cmd):
 
 
 def abspath(file):
-    return os.path.realpath(os.path.abspath(file))
+    return os.path.realpath(os.path.abspath(os.path.expanduser(file)))
+
+
+def expand_glob(pattern):
+    log(f"Expanding glob pattern: {pattern}", debug)
+    return [abspath(file) for file in glob.glob(pattern, recursive=True)]
 
 
 def get_year(date_string):
@@ -80,10 +89,20 @@ def render(template, variables):
     return Template(template).render(variables)
 
 
+def load_history(history_file, num_lines=100):
+    readline.set_history_length(num_lines)
+    try:
+        readline.read_history_file(history_file)
+    except FileNotFoundError:
+        pass
+
+
 def get_input(prompt, initial_text):
     readline.set_startup_hook(lambda: readline.insert_text(initial_text))
     user_input = input(f"{prompt}: ")
     readline.set_startup_hook()
+    readline.add_history(user_input)
+    readline.write_history_file(history_file)
     return user_input
 
 
@@ -91,7 +110,7 @@ def select_keys(dictionary, keys):
     return {key: dictionary[key] for key in keys}
 
 
-def get_m4b_tags(input_file):
+def get_m4b_tags(input_file, prompt=True):
     log(f"Loading tags from file: {input_file}", info)
     tags = select_keys(
         json.loads(
@@ -105,8 +124,9 @@ def get_m4b_tags(input_file):
     )
     tags["author"] = tags.pop("artist", "")
     tags["year"] = get_year(tags.pop("date", ""))
-    for tag in ["author", "title", "year"]:
-        tags[tag] = get_input(tag.capitalize(), f"{tags[tag]}")
+    if prompt:
+        for tag in ["author", "title", "year"]:
+            tags[tag] = get_input(tag.capitalize(), f"{tags[tag]}")
     return tags
 
 
@@ -125,8 +145,12 @@ def set_mp3_tags(mp3, artist, album, title, year, track, cover, disc=None):
     audio["TRCK"] = TRCK(encoding=3, text=track)
     if disc:
         audio["TPOS"] = TPOS(encoding=3, text=disc)
+    log(f"Loading cover from file: {cover}", debug)
     with open(cover, "rb") as image:
         data = image.read()
     audio["APIC"] = APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=data)
     log(f"Saving tags to file: {mp3}", info)
     audio.save(v2_version=3)
+
+
+load_history(history_file)
