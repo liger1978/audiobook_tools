@@ -124,7 +124,7 @@ def get_m4b_tags(input_file, prompt=True):
     )
     tags["author"] = tags.pop("artist", "")
     tags["year"] = get_year(tags.pop("date", ""))
-    tags["short_title"] = tags["title"]
+    tags["short_title"] = tags["title"].split(":")[0].strip()
     if prompt:
         for tag in ["author", "title", "short_title", "year"]:
             tags[tag] = get_input(tag.capitalize().replace("_", " "), f"{tags[tag]}")
@@ -152,6 +152,14 @@ def set_mp3_tags(mp3, artist, album, title, year, track, cover, disc=None):
     audio["APIC"] = APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=data)
     log(f"Saving tags to file: {mp3}", info)
     audio.save(v2_version=3)
+
+
+def load_config(app):
+    if os.path.exists(f"{conf_dir}/{app}.json"):
+        with open(f"{conf_dir}/{app}.json") as f:
+            return json.load(f)
+    else:
+        return {}
 
 
 load_history(history_file)

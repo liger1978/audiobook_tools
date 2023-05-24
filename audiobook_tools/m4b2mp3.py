@@ -10,6 +10,7 @@ def main():
     parser.add_argument("m4b", type=str, help="m4b file", nargs="+")
     args = parser.parse_args()
     logger.setLevel(logging.getLevelName(args.log_level.upper()))
+    config = load_config("audiobook_tools")
     input_files = []
     for file_pattern in args.m4b:
         if "*" in file_pattern:
@@ -17,10 +18,10 @@ def main():
         else:
             input_files.append(abspath(file_pattern))
     log(f"There are {len(input_files)} m4b files to process: {input_files}", debug)
-    # input_file = abspath(args.m4b)
     tags = get_m4b_tags(input_files[0])
+    output_base_dir = config.get("output_base_dir", os.getcwd())
     output_dir = abspath(
-        os.path.join(os.getcwd(), f"{tags['author']}/{tags['short_title']}")
+        os.path.join(output_base_dir, f"{tags['author']}/{tags['short_title']}")
     )
     output_dir = abspath(get_input("Output directory", f"{output_dir}"))
     output_image = os.path.join(output_dir, "cover.jpg")
@@ -47,7 +48,7 @@ def main():
             chapter.pop("tags")
             m4b_output_file = os.path.join(output_dir, f"{chapter['id']}.m4b")
             run(
-                f"ffmpeg -y -i '{input_files[0]}' -sn -vn -codec copy -ss {chapter['start_time']} -to {chapter['end_time']} '{m4b_output_file}'"
+                f"ffmpeg -y -i {shlex.quote(input_files[0])} -sn -vn -codec copy -ss {chapter['start_time']} -to {chapter['end_time']} {shlex.quote(m4b_output_file)}"
             )
     else:
         chapters = []
@@ -90,12 +91,12 @@ def main():
         if len(input_files) == 1:
             input_file = input_files[0]
             run(
-                f"ffmpeg -y -i '{input_file}' -map_metadata -1 -sn -vn -codec:a libmp3lame -qscale:a 2 -ss {chapter['start_time']} -to {chapter['end_time']} {shlex.quote(mp3_output_file)}"
+                f"ffmpeg -y -i {shlex.quote(input_file)} -map_metadata -1 -sn -vn -codec:a libmp3lame -qscale:a 2 -ss {chapter['start_time']} -to {chapter['end_time']} {shlex.quote(mp3_output_file)}"
             )
         else:
             input_file = chapter["file"]
             run(
-                f"ffmpeg -y -i '{input_file}' -map_metadata -1 -sn -vn -codec:a libmp3lame -qscale:a 2 {shlex.quote(mp3_output_file)}"
+                f"ffmpeg -y -i {shlex.quote(input_file)} -map_metadata -1 -sn -vn -codec:a libmp3lame -qscale:a 2 {shlex.quote(mp3_output_file)}"
             )
         total_tracks_in_section = len(
             [c for c in mp3_metadata["chapters"] if c["section"] == chapter["section"]]
