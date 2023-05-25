@@ -140,9 +140,7 @@ def check_section_tracks(mp3_metadata):
             for chapter in mp3_metadata["chapters"]
             if chapter["section"] == section
         ]
-        # Convert to int
         tracks = [int(track) for track in tracks]
-        # Check if tracks are sequential starting from 1
         if tracks != list(range(1, len(tracks) + 1)):
             return False
     return True
