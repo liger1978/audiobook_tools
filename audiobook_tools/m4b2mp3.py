@@ -1,4 +1,5 @@
 import json
+import re
 import shlex
 
 import yaml
@@ -78,6 +79,12 @@ def main():
     total_sections = get_input("Total sections", f"{total_sections}")
     if int(total_sections) > 1:
         file_name_format = "{{ author }} - {{ short_title }} - {{ section }} - {{ track }} - {{ chapter }}.mp3"
+        if not check_section_tracks(mp3_metadata):
+            print("Track numbers wthin sections are not sequential.")
+            fix_tracks = get_input("Fix track numbers? (y/n) ", "y")
+            # Match yes or y or Yes or YES or no or n or No or NO
+            if re.match(r"^(y|yes)$", fix_tracks, re.IGNORECASE):
+                mp3_metadata = fix_section_tracks(mp3_metadata)
     else:
         file_name_format = (
             "{{ author }} - {{ short_title }} - {{ track }} - {{ chapter }}.mp3"
@@ -123,6 +130,47 @@ def main():
         for chapter in mp3_metadata["chapters"]:
             m4b_output_file = os.path.join(output_dir, f"{chapter['id']}.m4b")
             os.remove(m4b_output_file)
+
+
+def check_section_tracks(mp3_metadata):
+    sections = set([chapter["section"] for chapter in mp3_metadata["chapters"]])
+    for section in sections:
+        tracks = [
+            chapter["track"]
+            for chapter in mp3_metadata["chapters"]
+            if chapter["section"] == section
+        ]
+        # Convert to int
+        tracks = [int(track) for track in tracks]
+        # Check if tracks are sequential starting from 1
+        if tracks != list(range(1, len(tracks) + 1)):
+            return False
+    return True
+
+
+def fix_section_tracks(mp3_metadata):
+    sections = set([chapter["section"] for chapter in mp3_metadata["chapters"]])
+    for section in sections:
+        track_number = 1
+        for chapter in mp3_metadata["chapters"]:
+            if chapter["section"] == section:
+                log(
+                    f"Fixing track number for chapter id {chapter['id']}, section {section}, track {chapter['track']}",
+                    debug,
+                )
+                chapter["track"] = str(track_number)
+                log(
+                    f"Fixed chapter id {chapter['id']}, section {section}, track {chapter['track']}",
+                    debug,
+                )
+                track_number += 1
+
+    max_digits = len(
+        str(max([int(chapter["track"]) for chapter in mp3_metadata["chapters"]]))
+    )
+    for chapter in mp3_metadata["chapters"]:
+        chapter["track"] = chapter["track"].zfill(max_digits)
+    return mp3_metadata
 
 
 if __name__ == "__main__":
